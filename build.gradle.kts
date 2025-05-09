@@ -19,10 +19,10 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
+     java {
+         sourceCompatibility = JavaVersion.VERSION_21
+         targetCompatibility = JavaVersion.VERSION_21
+     }
 
 tasks.test {
     useJUnitPlatform()
