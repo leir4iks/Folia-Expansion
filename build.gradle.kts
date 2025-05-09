@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    paperweightDevelopmentBundle("dev.folia:folia-dev-bundle:1.21.4-R0.1-SNAPSHOT")
+    paperweightDevelopmentBundle("dev.folia:dev-bundle:1.21.4-R0.1-SNAPSHOT")
     compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
     compileOnly("com.github.PlaceholderAPI:PlaceholderAPI:2.11.6")
 }
