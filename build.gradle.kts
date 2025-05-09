@@ -10,11 +10,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
-    compileOnly("me.clip:placeholderapi:2.11.6") {
-        exclude(group = "org.bstats")
-    }
-    paperweight.foliaDevBundle("1.21.4-R0.1-SNAPSHOT")
+    compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("me.clip:placeholderapi:2.11.6")
 }
 
 tasks.withType<JavaCompile> {
