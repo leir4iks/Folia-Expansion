@@ -4,13 +4,6 @@ plugins {
 }
 
 
-    plugins {
-        kotlin("jvm") version "1.9.22" // Или более новую версию Kotlin
-        id("io.papermc.paperweight.userdev") version "2.0.0-RC1" // Обновлено!
-    }
-    
-
-
 group = "org.dreeam.expansion.folia"
 
     maven {
