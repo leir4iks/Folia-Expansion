@@ -19,10 +19,11 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-     java {
-         sourceCompatibility = JavaVersion.VERSION_21
-         targetCompatibility = JavaVersion.VERSION_21
-     }
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
 
 tasks.test {
     useJUnitPlatform()
