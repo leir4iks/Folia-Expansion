@@ -1,14 +1,13 @@
 plugins {
-    id("java")
+    kotlin("jvm") version "1.9.22"
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.16"
 }
 
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://repo.helpch.at/#/releases/me/clip/placeholderapi/")
+    maven("https://jitpack.io")
 }
-
 dependencies {
     compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
@@ -21,4 +20,12 @@ tasks.withType<JavaCompile> {
 configure<JavaPluginExtension> {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+kotlin {
+    jvmToolchain(17)
 }
