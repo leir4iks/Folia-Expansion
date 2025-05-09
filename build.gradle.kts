@@ -1,15 +1,12 @@
 plugins {
-    kotlin("jvm") version "1.9.22"
-    id("io.papermc.paperweight.userdev") version "1.7.7"
+    id("java")
+    id("io.papermc.paperweight.userdev") version "1.5.5"
 }
 
-
-group = "org.dreeam.expansion.folia"
-
-    maven {
-        name = "placeholderapi"
-        url = uri("https://repo.helpch.at/#/releases/me/clip/placeholderapi/")
-    }
+repositories {
+    mavenCentral()
+    maven("https://repo.papermc.io/repository/maven-public/")
+    maven("https://repo.placeholderapi.dev/repository/maven-public/")
 }
 
 dependencies {
@@ -17,7 +14,6 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6") {
         exclude(group = "org.bstats")
     }
-
     paperweight.foliaDevBundle("1.21.4-R0.1-SNAPSHOT")
 }
 
