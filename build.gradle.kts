@@ -8,9 +8,11 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://jitpack.io")
 }
+
 dependencies {
+    paperweightDevelopmentBundle("dev.folia:folia-dev-bundle:1.21.4-R0.1-SNAPSHOT")
     compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
-    compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("com.github.PlaceholderAPI:PlaceholderAPI:2.11.6")
 }
 
 tasks.withType<JavaCompile> {
@@ -18,8 +20,8 @@ tasks.withType<JavaCompile> {
 }
 
 configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.test {
@@ -29,3 +31,4 @@ tasks.test {
 kotlin {
     jvmToolchain(17)
 }
+
