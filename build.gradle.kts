@@ -1,7 +1,15 @@
 plugins {
-    `java-library`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.16"
+    kotlin("jvm") version "1.9.22"
+    id("io.papermc.paperweight.userdev") version "1.7.7"
 }
+
+
+    plugins {
+        kotlin("jvm") version "1.9.22" // Или более новую версию Kotlin
+        id("io.papermc.paperweight.userdev") version "2.0.0-RC1" // Обновлено!
+    }
+    
+
 
 group = "org.dreeam.expansion.folia"
 
