@@ -6,7 +6,7 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://repo.placeholderapi.dev/repository/maven-public/")
+    maven("https://repo.helpch.at/#/releases/me/clip/placeholderapi/")
 }
 
 dependencies {
