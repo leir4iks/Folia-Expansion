@@ -7,12 +7,12 @@ group = "com.example"
 version = "1.0.0"
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(22))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    sourceCompatibility = "22"
-    targetCompatibility = "22"
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
 }
 
 repositories {
