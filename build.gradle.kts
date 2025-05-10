@@ -24,7 +24,7 @@ dependencies {
 }
 
 tasks.withType<Jar> {
-    archiveBaseName.set("MyPlugin")
+    archiveBaseName.set("Folia-Expansion")
     archiveClassifier.set("")
     archiveVersion.set("")
 }
