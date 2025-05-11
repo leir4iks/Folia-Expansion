@@ -22,7 +22,6 @@ package org.dreeam.expansion.folia;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import io.papermc.paper.threadedregions.commands.CommandUtil;
 import me.clip.placeholderapi.expansion.Cacheable;
 import me.clip.placeholderapi.expansion.Configurable;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -106,7 +105,7 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
 
         if (!foliaUtils.isFolia) return null;
 
-        if (p == null | !p.isOnline()) return "";
+        if (p == null || !p.isOnline()) return "";
         Player player = p.getPlayer();
         if (player == null) return "";
 
@@ -127,37 +126,31 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
 
         if (identifier.startsWith("global_tps_")) {
             identifier = identifier.replace("global_tps_", "");
-
             return getFoliaGlobalTPS(identifier);
         }
 
         if (identifier.startsWith("global_mspt_")) {
             identifier = identifier.replace("global_mspt_", "");
-
             return getFoliaGlobalMSPT(identifier);
         }
 
         if (identifier.startsWith("global_util_")) {
             identifier = identifier.replace("global_util_", "");
-
             return getFoliaGlobalUtil(identifier);
         }
 
         if (identifier.startsWith("tps_")) {
             identifier = identifier.replace("tps_", "");
-
-            return getFoliaTPS(identifier, p.getPlayer().getLocation());
+            return getFoliaTPS(identifier, player.getLocation());
         }
 
         if (identifier.startsWith("mspt_")) {
             identifier = identifier.replace("mspt_", "");
-
             return getFoliaMSPT(identifier, player.getLocation());
         }
 
         if (identifier.startsWith("util_")) {
             identifier = identifier.replace("util_", "");
-
             return getFoliaUtil(identifier, player.getLocation());
         }
 
@@ -284,21 +277,19 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
     // start - Round and colorize TPS/mspt
     private String fixTPS(double tps) {
         String finalTPS = String.format("%.2f", tps);
-
         return (tps > 20.00 ? "*" : "") + finalTPS;
     }
 
     private String getColoredTPS(double tps) {
-        return toLegacy(Component.text(fixTPS(tps), CommandUtil.getColourForTPS(tps)));
+        return toLegacy(Component.text(fixTPS(tps), getColourForTPS(tps)));
     }
 
     private String getColoredTPSPercent(double tps) {
-        return toLegacy(Component.text(getPercent(tps), CommandUtil.getColourForTPS(tps)));
+        return toLegacy(Component.text(getPercent(tps), getColourForTPS(tps)));
     }
 
     private String getPercent(double tps) {
         double finalPercent = Math.min(Math.round(100 / 20.00 * tps), 100.0);
-
         return (tps > 20.0 ? "*" : "") + finalPercent + "%";
     }
 
@@ -307,7 +298,7 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
     }
 
     private String getColoredMSPT(double mspt) {
-        return toLegacy(Component.text(fixMSPT(mspt), CommandUtil.getColourForMSPT(mspt)));
+        return toLegacy(Component.text(fixMSPT(mspt), getColourForMSPT(mspt)));
     }
 
     private String fixUtil(double util) {
@@ -315,7 +306,27 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
     }
 
     private String getColoredUtil(double util) {
-        return toLegacy(Component.text(fixUtil(util), CommandUtil.getUtilisationColourRegion(util / foliaUtils.maxThreadsCount())));
+        return toLegacy(Component.text(fixUtil(util), getUtilisationColourRegion(util / foliaUtils.maxThreadsCount())));
     }
     // end
+
+    // === ВМЕСТО CommandUtil: свои методы цвета ===
+
+    private NamedTextColor getColourForTPS(double tps) {
+        if (tps >= 18.0) return NamedTextColor.GREEN;
+        if (tps >= 15.0) return NamedTextColor.YELLOW;
+        return NamedTextColor.RED;
+    }
+
+    private NamedTextColor getColourForMSPT(double mspt) {
+        if (mspt <= 50.0) return NamedTextColor.GREEN;
+        if (mspt <= 100.0) return NamedTextColor.YELLOW;
+        return NamedTextColor.RED;
+    }
+
+    private NamedTextColor getUtilisationColourRegion(double util) {
+        if (util < 0.6) return NamedTextColor.GREEN;
+        if (util < 0.85) return NamedTextColor.YELLOW;
+        return NamedTextColor.RED;
+    }
 }
