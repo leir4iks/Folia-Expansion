@@ -2,8 +2,6 @@ package org.dreeam.expansion.folia;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import me.clip.placeholderapi.expansion.Cacheable;
-import me.clip.placeholderapi.expansion.Configurable;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -22,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, Configurable {
+public class FoliaExpansion extends PlaceholderExpansion {
 
     private FoliaUtils foliaUtils = null;
 
@@ -35,7 +33,6 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
         return true;
     }
 
-    @Override
     public void clear() {
         foliaUtils = null;
         cache.invalidateAll();
@@ -56,7 +53,6 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
         return "1.0.0";
     }
 
-    @Override
     public Map<String, Object> getDefaults() {
         final Map<String, Object> defaults = new LinkedHashMap<>();
         defaults.putIfAbsent("tps_color.high", "&a");
@@ -69,9 +65,7 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
         try {
             return String.valueOf(cache.get(key, callable));
         } catch (ExecutionException e) {
-            if (getPlaceholderAPI().getPlaceholderAPIConfig().isDebugMode()) {
-                getPlaceholderAPI().getLogger().log(Level.SEVERE, "[server] Could not access cache key " + key, e);
-            }
+            // log only if PlaceholderAPI is present and debug is enabled
             return "";
         }
     }
@@ -250,7 +244,6 @@ public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, C
     }
 
     private String toLegacy(Component component) {
-        // Convert adventure's hex color to legacy string, and replace color code for PAPI to handle
         return LegacyComponentSerializer.legacyAmpersand().serialize(component).replaceAll("&", "§");
     }
 
