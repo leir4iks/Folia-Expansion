@@ -1,7 +1,13 @@
 package org.dreeam.expansion.folia;
 
+import io.papermc.paper.threadedregions.TickRegionScheduler;
+import io.papermc.paper.threadedregions.TickRegions;
+import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_21.4_R1.CraftWorld;
+import net.minecraft.world.level.Level;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,9 +16,6 @@ public class FoliaUtils {
 
     public boolean isFolia = false;
 
-    /**
-     * Проверяет, запущен ли сервер на Folia, по наличию класса internal API.
-     */
     public void checkFolia() {
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
@@ -22,56 +25,74 @@ public class FoliaUtils {
         }
     }
 
-    /**
-     * Получить глобальный TPS сервера (1, 5, 15 минут).
-     * Возвращает 5 значений, дублируя последние.
-     */
     public List<Double> getGlobalTPS() {
         double[] tps = Bukkit.getServer().getTPS();
         return List.of(tps[0], tps[1], tps[2], tps[2], tps[2]);
     }
 
-    /**
-     * Получить глобальный MSPT сервера (среднее время тика).
-     * Возвращает 5 значений, дублируя текущее среднее.
-     */
     public List<Double> getGlobalMSPT() {
         double mspt = Bukkit.getServer().getAverageTickTime();
         return List.of(mspt, mspt, mspt, mspt, mspt);
     }
 
-    /**
-     * Получить глобальную загрузку (Util) - заглушка, всегда 1.0 (100%).
-     */
     public double getGlobalUtil() {
         return 1.0;
     }
 
-    /**
-     * Получить TPS для региона по локации - отсутствует в публичном API, возвращаем глобальный TPS.
-     */
     public List<Double> getTPS(Location location) {
-        return getGlobalTPS();
+        if (!isFolia || location == null) {
+            return getGlobalTPS();
+        }
+        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region = getRegion(location);
+        if (region == null || region.getData() == null) {
+            return getGlobalTPS();
+        }
+        var handle = region.getData().getRegionSchedulingHandle();
+        long now = System.nanoTime();
+        return List.of(
+                handle.getTickReport5s(now).tpsData().segmentAll().average(),
+                handle.getTickReport15s(now).tpsData().segmentAll().average(),
+                handle.getTickReport1m(now).tpsData().segmentAll().average(),
+                handle.getTickReport5m(now).tpsData().segmentAll().average(),
+                handle.getTickReport15m(now).tpsData().segmentAll().average()
+        );
     }
 
-    /**
-     * Получить MSPT для региона по локации - отсутствует в публичном API, возвращаем глобальный MSPT.
-     */
     public List<Double> getMSPT(Location location) {
-        return getGlobalMSPT();
+        if (!isFolia || location == null) {
+            return getGlobalMSPT();
+        }
+        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region = getRegion(location);
+        if (region == null || region.getData() == null) {
+            return getGlobalMSPT();
+        }
+        var handle = region.getData().getRegionSchedulingHandle();
+        long now = System.nanoTime();
+        return List.of(
+                handle.getTickReport5s(now).timePerTickData().segmentAll().average() / 1_000_000.0,
+                handle.getTickReport15s(now).timePerTickData().segmentAll().average() / 1_000_000.0,
+                handle.getTickReport1m(now).timePerTickData().segmentAll().average() / 1_000_000.0,
+                handle.getTickReport5m(now).timePerTickData().segmentAll().average() / 1_000_000.0,
+                handle.getTickReport15m(now).timePerTickData().segmentAll().average() / 1_000_000.0
+        );
     }
 
     /**
-     * Получить Util для региона по локации - заглушка, возвращаем глобальный Util.
+     * Получить регион по локации игрока.
      */
-    public List<Double> getUtil(Location location) {
-        return Collections.singletonList(getGlobalUtil());
-    }
+    private ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> getRegion(Location location) {
+        if (location == null) return null;
+        World bukkitWorld = location.getWorld();
+        if (bukkitWorld == null) return null;
 
-    /**
-     * Возвращает максимальное количество потоков - заглушка, возвращает 1.
-     */
-    public double maxThreadsCount() {
-        return 1.0;
+        Level nmsLevel = ((CraftWorld) bukkitWorld).getHandle();
+        int chunkX = location.getBlockX() >> 4;
+        int chunkZ = location.getBlockZ() >> 4;
+
+        // Получаем регионизатор
+        var regionizer = nmsLevel.regioniser;
+
+        // Получаем регион по координатам чанка
+        return regionizer.getRegion(chunkX, chunkZ);
     }
 }
