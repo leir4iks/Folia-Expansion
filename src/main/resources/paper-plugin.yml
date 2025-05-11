@@ -3,6 +3,9 @@ version: 1.0.0
 main: org.dreeam.expansion.folia.FoliaExpansion
 api-version: "1.21.4"
 folia-supported: true
+
 dependencies:
   server:
-    - PlaceholderAPI
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
