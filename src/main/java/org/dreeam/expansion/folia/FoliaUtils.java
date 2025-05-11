@@ -1,6 +1,5 @@
 package org.dreeam.expansion.folia;
 
-import io.papermc.paper.threadedregions.TickRegionScheduler;
 import io.papermc.paper.threadedregions.TickRegions;
 import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import org.bukkit.Bukkit;
@@ -9,13 +8,15 @@ import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_21_4_R1.CraftWorld;
 import net.minecraft.world.level.Level;
 
-import java.util.Collections;
 import java.util.List;
 
 public class FoliaUtils {
 
     public boolean isFolia = false;
 
+    /**
+     * Проверяет, запущен ли сервер на Folia (наличие класса RegionizedServer).
+     */
     public void checkFolia() {
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
@@ -25,25 +26,40 @@ public class FoliaUtils {
         }
     }
 
+    /**
+     * Получить глобальный TPS сервера (1, 5, 15 минут).
+     * Возвращает 5 значений, дублируя последние.
+     */
     public List<Double> getGlobalTPS() {
         double[] tps = Bukkit.getServer().getTPS();
         return List.of(tps[0], tps[1], tps[2], tps[2], tps[2]);
     }
 
+    /**
+     * Получить глобальный MSPT сервера (среднее время тика).
+     * Возвращает 5 значений, дублируя текущее среднее.
+     */
     public List<Double> getGlobalMSPT() {
         double mspt = Bukkit.getServer().getAverageTickTime();
         return List.of(mspt, mspt, mspt, mspt, mspt);
     }
 
+    /**
+     * Заглушка - глобальная загрузка сервера.
+     */
     public double getGlobalUtil() {
         return 1.0;
     }
 
+    /**
+     * Получить TPS региона по локации игрока.
+     * Если Folia не используется или данные недоступны - возвращает глобальный TPS.
+     */
     public List<Double> getTPS(Location location) {
         if (!isFolia || location == null) {
             return getGlobalTPS();
         }
-        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region = getRegion(location);
+        var region = getRegion(location);
         if (region == null || region.getData() == null) {
             return getGlobalTPS();
         }
@@ -58,11 +74,15 @@ public class FoliaUtils {
         );
     }
 
+    /**
+     * Получить MSPT региона по локации игрока.
+     * Если Folia не используется или данные недоступны - возвращает глобальный MSPT.
+     */
     public List<Double> getMSPT(Location location) {
         if (!isFolia || location == null) {
             return getGlobalMSPT();
         }
-        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region = getRegion(location);
+        var region = getRegion(location);
         if (region == null || region.getData() == null) {
             return getGlobalMSPT();
         }
@@ -78,7 +98,7 @@ public class FoliaUtils {
     }
 
     /**
-     * Получить регион по локации игрока.
+     * Получить регион Folia по локации игрока.
      */
     private ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> getRegion(Location location) {
         if (location == null) return null;
@@ -89,10 +109,7 @@ public class FoliaUtils {
         int chunkX = location.getBlockX() >> 4;
         int chunkZ = location.getBlockZ() >> 4;
 
-        // Получаем регионизатор
         var regionizer = nmsLevel.regioniser;
-
-        // Получаем регион по координатам чанка
         return regionizer.getRegion(chunkX, chunkZ);
     }
 }
