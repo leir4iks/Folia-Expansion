@@ -23,19 +23,13 @@ dependencies {
 }
 
 tasks {
-    compileJava {
-        options.encoding = "UTF-8"
-    }
-
     jar {
-        archiveBaseName.set("Folia-Expansion")
+        enabled = false
     }
-
     shadowJar {
         archiveClassifier.set("")
-        relocate("me.clip.placeholderapi", "com.Folia-Expansion.shaded.placeholderapi")
+        // relocate(...) если нужно
     }
-
     build {
         dependsOn(shadowJar)
     }
