@@ -6,7 +6,7 @@ import io.papermc.paper.threadedregions.ThreadedRegionizer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_21.4_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_21_4_R1.CraftWorld;
 import net.minecraft.world.level.Level;
 
 import java.util.Collections;
