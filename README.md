@@ -7,7 +7,7 @@ e.g. global tps and region tps
 
 ## Placeholders
 
-Global placeholders
+Global placeholders.
 
 ```
 %folia_global_tps%
