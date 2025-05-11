@@ -1,11 +1,7 @@
 name: FoliaExpansion
 version: 1.0.0
-main: org.dreeam.expansion.folia.FoliaExpansion
+main: org.dreeam.expansion.folia.FoliaExpansionPlugin
 api-version: "1.21.4"
 folia-supported: true
-
-dependencies:
-  server:
-    PlaceholderAPI:
-      load: BEFORE
-      required: false
+softdepend:
+  - PlaceholderAPI
