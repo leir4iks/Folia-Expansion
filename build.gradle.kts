@@ -19,17 +19,22 @@ repositories {
 dependencies {
     compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
-    // compileOnly(files("libs/folia-1.21.4.jar")) // Только если очень надо
 }
 
 tasks {
     jar {
         enabled = false
     }
+
     shadowJar {
+        archiveBaseName.set("Folia-Expansion")
+        archiveVersion.set("1.0.0")
         archiveClassifier.set("")
-        // relocate(...) если нужно
+        archiveExtension.set("jar")
+        // relocate("me.clip.placeholderapi", "com.Folia-Expansion.shaded.placeholderapi")
+        mergeServiceFiles()
     }
+
     build {
         dependsOn(shadowJar)
     }
