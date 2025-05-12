@@ -2,6 +2,9 @@ package org.dreeam.expansion.folia;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.papermc.paper.threadedregions.commands.CommandUtil;
+import me.clip.placeholderapi.expansion.Cacheable;
+import me.clip.placeholderapi.expansion.Configurable;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -13,14 +16,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
-public class FoliaExpansion extends PlaceholderExpansion {
+public class FoliaExpansion extends PlaceholderExpansion implements Cacheable, Configurable {
 
     private FoliaUtils foliaUtils = null;
 
@@ -33,6 +36,7 @@ public class FoliaExpansion extends PlaceholderExpansion {
         return true;
     }
 
+    @Override
     public void clear() {
         foliaUtils = null;
         cache.invalidateAll();
@@ -53,6 +57,7 @@ public class FoliaExpansion extends PlaceholderExpansion {
         return "1.0.0";
     }
 
+    @Override
     public Map<String, Object> getDefaults() {
         final Map<String, Object> defaults = new LinkedHashMap<>();
         defaults.putIfAbsent("tps_color.high", "&a");
@@ -65,6 +70,9 @@ public class FoliaExpansion extends PlaceholderExpansion {
         try {
             return String.valueOf(cache.get(key, callable));
         } catch (ExecutionException e) {
+            if (getPlaceholderAPI().getPlaceholderAPIConfig().isDebugMode()) {
+                getPlaceholderAPI().getLogger().log(Level.SEVERE, "[server] Could not access cache key " + key, e);
+            }
             return "";
         }
     }
@@ -78,29 +86,10 @@ public class FoliaExpansion extends PlaceholderExpansion {
 
         if (!foliaUtils.isFolia) return null;
 
-        if (p == null || !p.isOnline()) return "";
+        if (p == null | !p.isOnline()) return "";
         Player player = p.getPlayer();
         if (player == null) return "";
 
-        // --- REGION PLACEHOLDERS ---
-        if (identifier.equalsIgnoreCase("region_tps")) {
-            List<Double> tps = foliaUtils.getTPS(player.getLocation());
-            return fixTPS(tps.get(0)); // 5s TPS региона
-        }
-        if (identifier.equalsIgnoreCase("region_mspt")) {
-            List<Double> mspt = foliaUtils.getMSPT(player.getLocation());
-            return fixMSPT(mspt.get(0)); // 5s MSPT региона
-        }
-        if (identifier.equalsIgnoreCase("region_tps_colored")) {
-            List<Double> tps = foliaUtils.getTPS(player.getLocation());
-            return getColoredTPS(tps.get(0));
-        }
-        if (identifier.equalsIgnoreCase("region_mspt_colored")) {
-            List<Double> mspt = foliaUtils.getMSPT(player.getLocation());
-            return getColoredMSPT(mspt.get(0));
-        }
-
-        // --- Глобальные плейсхолдеры и остальные ---
         switch (identifier) {
             case "global_tps":
                 return getFoliaGlobalTPS(null);
@@ -118,49 +107,179 @@ public class FoliaExpansion extends PlaceholderExpansion {
 
         if (identifier.startsWith("global_tps_")) {
             identifier = identifier.replace("global_tps_", "");
+
             return getFoliaGlobalTPS(identifier);
         }
 
         if (identifier.startsWith("global_mspt_")) {
             identifier = identifier.replace("global_mspt_", "");
+
             return getFoliaGlobalMSPT(identifier);
         }
 
         if (identifier.startsWith("global_util_")) {
             identifier = identifier.replace("global_util_", "");
+
             return getFoliaGlobalUtil(identifier);
         }
 
         if (identifier.startsWith("tps_")) {
             identifier = identifier.replace("tps_", "");
-            return getFoliaTPS(identifier, player.getLocation());
+
+            return getFoliaTPS(identifier, p.getPlayer().getLocation());
         }
 
         if (identifier.startsWith("mspt_")) {
             identifier = identifier.replace("mspt_", "");
+
             return getFoliaMSPT(identifier, player.getLocation());
         }
 
         if (identifier.startsWith("util_")) {
             identifier = identifier.replace("util_", "");
+
             return getFoliaUtil(identifier, player.getLocation());
         }
 
         return null;
     }
 
-    // --- Остальной код без изменений (getFoliaGlobalTPS, getFoliaGlobalMSPT, getFoliaGlobalUtil, getFoliaTPS, getFoliaMSPT, getFoliaUtil, toLegacy, fixTPS, getColoredTPS, fixMSPT, getColoredMSPT, и т.д.) ---
+    public String getFoliaGlobalTPS(String arg) {
+        if (arg == null || arg.isEmpty()) {
+            StringJoiner joiner = new StringJoiner(toLegacy(Component.text(", ", NamedTextColor.GRAY)));
+            for (double tps : foliaUtils.getGlobalTPS()) {
+                joiner.add(getColoredTPS(tps));
+            }
+            return joiner.toString();
+        }
+        return switch (arg) {
+            case "5s" -> fixTPS(foliaUtils.getGlobalTPS().get(0));
+            case "15s" -> fixTPS(foliaUtils.getGlobalTPS().get(1));
+            case "1m" -> fixTPS(foliaUtils.getGlobalTPS().get(2));
+            case "5m" -> fixTPS(foliaUtils.getGlobalTPS().get(3));
+            case "15m" -> fixTPS(foliaUtils.getGlobalTPS().get(4));
+            case "5s_colored" -> getColoredTPS(foliaUtils.getGlobalTPS().get(0));
+            case "15s_colored" -> getColoredTPS(foliaUtils.getGlobalTPS().get(1));
+            case "1m_colored" -> getColoredTPS(foliaUtils.getGlobalTPS().get(2));
+            case "5m_colored" -> getColoredTPS(foliaUtils.getGlobalTPS().get(3));
+            case "15m_colored" -> getColoredTPS(foliaUtils.getGlobalTPS().get(4));
+            default -> null;
+        };
+    }
 
-    // ... (оставь остальной код как у тебя)
-    // Ниже примеры для fixTPS, fixMSPT и getColoredTPS, getColoredMSPT
+    public String getFoliaGlobalMSPT(String arg) {
+        if (arg == null || arg.isEmpty()) {
+            StringJoiner joiner = new StringJoiner(toLegacy(Component.text(", ", NamedTextColor.GRAY)));
+            for (double mspt : foliaUtils.getGlobalMSPT()) {
+                joiner.add(getColoredMSPT(mspt));
+            }
+            return joiner.toString();
+        }
+        return switch (arg) {
+            case "5s" -> fixMSPT(foliaUtils.getGlobalMSPT().get(0));
+            case "15s" -> fixMSPT(foliaUtils.getGlobalMSPT().get(1));
+            case "1m" -> fixMSPT(foliaUtils.getGlobalMSPT().get(2));
+            case "5m" -> fixMSPT(foliaUtils.getGlobalMSPT().get(3));
+            case "15m" -> fixMSPT(foliaUtils.getGlobalMSPT().get(4));
+            case "5s_colored" -> getColoredMSPT(foliaUtils.getGlobalMSPT().get(0));
+            case "15s_colored" -> getColoredMSPT(foliaUtils.getGlobalMSPT().get(1));
+            case "1m_colored" -> getColoredMSPT(foliaUtils.getGlobalMSPT().get(2));
+            case "5m_colored" -> getColoredMSPT(foliaUtils.getGlobalMSPT().get(3));
+            case "15m_colored" -> getColoredMSPT(foliaUtils.getGlobalMSPT().get(4));
+            default -> null;
+        };
+    }
 
+    public String getFoliaGlobalUtil(String arg) {
+        if (arg == null || arg.isEmpty()) {
+            return fixUtil(foliaUtils.getGlobalUtil());
+        } else if (arg.equals("colored")) {
+            return getColoredUtil(foliaUtils.getGlobalUtil());
+        } else {
+            return null;
+        }
+    }
+
+    public String getFoliaTPS(String arg, Location location) {
+        if (arg == null || arg.isEmpty()) {
+            StringJoiner joiner = new StringJoiner(toLegacy(Component.text(", ", NamedTextColor.GRAY)));
+            for (double tps : foliaUtils.getTPS(location)) {
+                joiner.add(getColoredTPS(tps));
+            }
+            return joiner.toString();
+        }
+        return switch (arg) {
+            case "5s" -> fixTPS(foliaUtils.getTPS(location).get(0));
+            case "15s" -> fixTPS(foliaUtils.getTPS(location).get(1));
+            case "1m" -> fixTPS(foliaUtils.getTPS(location).get(2));
+            case "5m" -> fixTPS(foliaUtils.getTPS(location).get(3));
+            case "15m" -> fixTPS(foliaUtils.getTPS(location).get(4));
+            case "5s_colored" -> getColoredTPS(foliaUtils.getTPS(location).get(0));
+            case "15s_colored" -> getColoredTPS(foliaUtils.getTPS(location).get(1));
+            case "1m_colored" -> getColoredTPS(foliaUtils.getTPS(location).get(2));
+            case "5m_colored" -> getColoredTPS(foliaUtils.getTPS(location).get(3));
+            case "15m_colored" -> getColoredTPS(foliaUtils.getTPS(location).get(4));
+            default -> null;
+        };
+    }
+
+    public String getFoliaMSPT(String arg, Location location) {
+        if (arg == null || arg.isEmpty()) {
+            StringJoiner joiner = new StringJoiner(toLegacy(Component.text(", ", NamedTextColor.GRAY)));
+            for (double mspt : foliaUtils.getMSPT(location)) {
+                joiner.add(getColoredMSPT(mspt));
+            }
+            return joiner.toString();
+        }
+        return switch (arg) {
+            case "5s" -> fixMSPT(foliaUtils.getMSPT(location).get(0));
+            case "15s" -> fixMSPT(foliaUtils.getMSPT(location).get(1));
+            case "1m" -> fixMSPT(foliaUtils.getMSPT(location).get(2));
+            case "5m" -> fixMSPT(foliaUtils.getMSPT(location).get(3));
+            case "15m" -> fixMSPT(foliaUtils.getMSPT(location).get(4));
+            case "5s_colored" -> getColoredMSPT(foliaUtils.getMSPT(location).get(0));
+            case "15s_colored" -> getColoredMSPT(foliaUtils.getMSPT(location).get(1));
+            case "1m_colored" -> getColoredMSPT(foliaUtils.getMSPT(location).get(2));
+            case "5m_colored" -> getColoredMSPT(foliaUtils.getMSPT(location).get(3));
+            case "15m_colored" -> getColoredMSPT(foliaUtils.getMSPT(location).get(4));
+            default -> null;
+        };
+    }
+
+    public String getFoliaUtil(String arg, Location location) {
+        if (arg == null || arg.isEmpty()) {
+            return fixUtil(foliaUtils.getUtil(location).get(0));
+        } else if (arg.equals("colored")) {
+            return getColoredUtil(foliaUtils.getUtil(location).get(0));
+        } else {
+            return null;
+        }
+    }
+
+    private String toLegacy(Component component) {
+        // Convert adventure's hex color to legacy string, and replace color code for PAPI to handle
+        return LegacyComponentSerializer.legacyAmpersand().serialize(component).replaceAll("&", "§");
+    }
+
+    // start - Round and colorize TPS/mspt
     private String fixTPS(double tps) {
         String finalTPS = String.format("%.2f", tps);
+
         return (tps > 20.00 ? "*" : "") + finalTPS;
     }
 
     private String getColoredTPS(double tps) {
-        return toLegacy(Component.text(fixTPS(tps), getColourForTPS(tps)));
+        return toLegacy(Component.text(fixTPS(tps), CommandUtil.getColourForTPS(tps)));
+    }
+
+    private String getColoredTPSPercent(double tps) {
+        return toLegacy(Component.text(getPercent(tps), CommandUtil.getColourForTPS(tps)));
+    }
+
+    private String getPercent(double tps) {
+        double finalPercent = Math.min(Math.round(100 / 20.00 * tps), 100.0);
+
+        return (tps > 20.0 ? "*" : "") + finalPercent + "%";
     }
 
     private String fixMSPT(double mspt) {
@@ -168,22 +287,15 @@ public class FoliaExpansion extends PlaceholderExpansion {
     }
 
     private String getColoredMSPT(double mspt) {
-        return toLegacy(Component.text(fixMSPT(mspt), getColourForMSPT(mspt)));
+        return toLegacy(Component.text(fixMSPT(mspt), CommandUtil.getColourForMSPT(mspt)));
     }
 
-    private String toLegacy(Component component) {
-        return LegacyComponentSerializer.legacyAmpersand().serialize(component).replaceAll("&", "§");
+    private String fixUtil(double util) {
+        return String.format("%.2f", util * 100.0);
     }
 
-    private NamedTextColor getColourForTPS(double tps) {
-        if (tps >= 18.0) return NamedTextColor.GREEN;
-        if (tps >= 15.0) return NamedTextColor.YELLOW;
-        return NamedTextColor.RED;
+    private String getColoredUtil(double util) {
+        return toLegacy(Component.text(fixUtil(util), CommandUtil.getUtilisationColourRegion(util / foliaUtils.maxThreadsCount())));
     }
-
-    private NamedTextColor getColourForMSPT(double mspt) {
-        if (mspt <= 50.0) return NamedTextColor.GREEN;
-        if (mspt <= 100.0) return NamedTextColor.YELLOW;
-        return NamedTextColor.RED;
-    }
+    // end
 }
