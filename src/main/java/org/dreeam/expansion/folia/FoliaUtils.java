@@ -1,22 +1,23 @@
 package org.dreeam.expansion.folia;
 
-import io.papermc.paper.threadedregions.TickRegions;
+import io.papermc.paper.threadedregions.RegionizedServer;
 import io.papermc.paper.threadedregions.ThreadedRegionizer;
+import io.papermc.paper.threadedregions.TickData;
+import io.papermc.paper.threadedregions.TickRegionScheduler;
+import io.papermc.paper.threadedregions.TickRegions;
+import net.minecraft.world.level.Level;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_21_4_R1.CraftWorld;
-import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FoliaUtils {
 
     public boolean isFolia = false;
 
-    /**
-     * Проверяет, запущен ли сервер на Folia (наличие класса RegionizedServer).
-     */
     public void checkFolia() {
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
@@ -26,90 +27,94 @@ public class FoliaUtils {
         }
     }
 
-    /**
-     * Получить глобальный TPS сервера (1, 5, 15 минут).
-     * Возвращает 5 значений, дублируя последние.
-     */
     public List<Double> getGlobalTPS() {
-        double[] tps = Bukkit.getServer().getTPS();
-        return List.of(tps[0], tps[1], tps[2], tps[2], tps[2]);
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = RegionizedServer.getGlobalTickData();
+        double tps_5s = regionHandle.getTickReport5s(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_15s = regionHandle.getTickReport15s(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_1m = regionHandle.getTickReport1m(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_5m = regionHandle.getTickReport5m(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_15m = regionHandle.getTickReport15m(System.nanoTime()).tpsData().segmentAll().average();
+        return List.of(tps_5s, tps_15s, tps_1m, tps_5m, tps_15m);
     }
 
-    /**
-     * Получить глобальный MSPT сервера (среднее время тика).
-     * Возвращает 5 значений, дублируя текущее среднее.
-     */
     public List<Double> getGlobalMSPT() {
-        double mspt = Bukkit.getServer().getAverageTickTime();
-        return List.of(mspt, mspt, mspt, mspt, mspt);
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = RegionizedServer.getGlobalTickData();
+        double mspt_5s = regionHandle.getTickReport5s(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_15s = regionHandle.getTickReport15s(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_1m = regionHandle.getTickReport1m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_5m = regionHandle.getTickReport5m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_15m = regionHandle.getTickReport15m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        return List.of(mspt_5s, mspt_15s, mspt_1m, mspt_5m, mspt_15m);
     }
 
-    /**
-     * Заглушка - глобальная загрузка сервера.
-     */
     public double getGlobalUtil() {
-        return 1.0;
+        final List<ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData>> regions = new ArrayList<>();
+        for (final World bukkitWorld : Bukkit.getWorlds()) {
+            ((Level) bukkitWorld).getWorld().getHandle().regioniser.computeForAllRegions(regions::add);
+        }
+        double totalUtil = 0.0;
+        final long now = System.nanoTime();
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = RegionizedServer.getGlobalTickData();
+        for (final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region : regions) {
+            final TickData.TickReportData report = region.getData().getRegionSchedulingHandle().getTickReport15s(now);
+            totalUtil += (report == null ? 0.0 : report.utilisation());
+        }
+        totalUtil += regionHandle.getTickReport15s(now).utilisation();
+        return totalUtil;
     }
 
-    /**
-     * Получить TPS региона по локации игрока.
-     * Если Folia не используется или данные недоступны - возвращает глобальный TPS.
-     */
     public List<Double> getTPS(Location location) {
-        if (!isFolia || location == null) {
+        World world = location.getWorld();
+        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> currentRegion = TickRegionScheduler.getCurrentRegion();
+        if (currentRegion == null || currentRegion.getData() == null) {
             return getGlobalTPS();
         }
-        var region = getRegion(location);
-        if (region == null || region.getData() == null) {
-            return getGlobalTPS();
-        }
-        var handle = region.getData().getRegionSchedulingHandle();
-        long now = System.nanoTime();
-        return List.of(
-                handle.getTickReport5s(now).tpsData().segmentAll().average(),
-                handle.getTickReport15s(now).tpsData().segmentAll().average(),
-                handle.getTickReport1m(now).tpsData().segmentAll().average(),
-                handle.getTickReport5m(now).tpsData().segmentAll().average(),
-                handle.getTickReport15m(now).tpsData().segmentAll().average()
-        );
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = currentRegion.getData().getRegionSchedulingHandle();
+        double tps_5s = regionHandle.getTickReport5s(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_15s = regionHandle.getTickReport15s(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_1m = regionHandle.getTickReport1m(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_5m = regionHandle.getTickReport5m(System.nanoTime()).tpsData().segmentAll().average();
+        double tps_15m = regionHandle.getTickReport15m(System.nanoTime()).tpsData().segmentAll().average();
+        return List.of(tps_5s, tps_15s, tps_1m, tps_5m, tps_15m);
     }
 
-    /**
-     * Получить MSPT региона по локации игрока.
-     * Если Folia не используется или данные недоступны - возвращает глобальный MSPT.
-     */
     public List<Double> getMSPT(Location location) {
-        if (!isFolia || location == null) {
+        World world = location.getWorld();
+        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> currentRegion = TickRegionScheduler.getCurrentRegion();
+        if (currentRegion == null || currentRegion.getData() == null) {
             return getGlobalMSPT();
         }
-        var region = getRegion(location);
-        if (region == null || region.getData() == null) {
-            return getGlobalMSPT();
-        }
-        var handle = region.getData().getRegionSchedulingHandle();
-        long now = System.nanoTime();
-        return List.of(
-                handle.getTickReport5s(now).timePerTickData().segmentAll().average() / 1_000_000.0,
-                handle.getTickReport15s(now).timePerTickData().segmentAll().average() / 1_000_000.0,
-                handle.getTickReport1m(now).timePerTickData().segmentAll().average() / 1_000_000.0,
-                handle.getTickReport5m(now).timePerTickData().segmentAll().average() / 1_000_000.0,
-                handle.getTickReport15m(now).timePerTickData().segmentAll().average() / 1_000_000.0
-        );
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = currentRegion.getData().getRegionSchedulingHandle();
+        double mspt_5s = regionHandle.getTickReport5s(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_15s = regionHandle.getTickReport15s(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_1m = regionHandle.getTickReport1m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_5m = regionHandle.getTickReport5m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        double mspt_15m = regionHandle.getTickReport15m(System.nanoTime()).timePerTickData().segmentAll().average() / 1.0E6;
+        return List.of(mspt_5s, mspt_15s, mspt_1m, mspt_5m, mspt_15m);
     }
 
-    /**
-     * Получить регион Folia по локации игрока.
-     */
-    private ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> getRegion(Location location) {
-        if (location == null) return null;
-        World bukkitWorld = location.getWorld();
-        if (bukkitWorld == null) return null;
+    public List<Double> getUtil(Location location) {
+        if (location == null) {
+            return Collections.singletonList(getGlobalUtil());
+        }
+        World world = location.getWorld();
+        if (world == null) {
+            return Collections.singletonList(getGlobalUtil());
+        }
+        ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> currentRegion = TickRegionScheduler.getCurrentRegion();
+        if (currentRegion == null || currentRegion.getData() == null) {
+            return Collections.singletonList(getGlobalUtil());
+        }
+        final TickRegionScheduler.RegionScheduleHandle regionHandle = currentRegion.getData().getRegionSchedulingHandle();
+        double util_5s = regionHandle.getTickReport5s(System.nanoTime()).utilisation();
+        double util_15s = regionHandle.getTickReport15s(System.nanoTime()).utilisation();
+        double util_1m = regionHandle.getTickReport1m(System.nanoTime()).utilisation();
+        double util_5m = regionHandle.getTickReport5m(System.nanoTime()).utilisation();
+        double util_15m = regionHandle.getTickReport15m(System.nanoTime()).utilisation();
+        return List.of(util_5s, util_15s, util_1m, util_5m, util_15m);
+    }
 
-        Level nmsLevel = ((CraftWorld) bukkitWorld).getHandle();
-        int chunkX = location.getBlockX() >> 4;
-        int chunkZ = location.getBlockZ() >> 4;
-
-        var regionizer = nmsLevel.regioniser;
-        return regionizer.getRegion(chunkX, chunkZ);
+    public double maxThreadsCount() {
+        return TickRegions.getScheduler().getTotalThreadCount();
     }
 }
