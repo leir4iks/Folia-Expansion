@@ -1,41 +1,40 @@
 plugins {
-    java
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    `java-library`
+    id("io.papermc.paperweight.userdev") version "1.5.11"
 }
 
-group = "com.Folia-Expansion"
+group = "org.dreeam.expansion.folia"
 version = "1.0.0"
-
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-}
+description = "PlaceholderAPI expansion for Folia"
 
 repositories {
     mavenCentral()
-    maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+
+    maven {
+        name = "paper-repo"
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+    }
+
+    maven {
+        name = "placeholderapi"
+        url = uri("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    }
 }
 
 dependencies {
-    compileOnly("dev.folia:folia-api:1.21.4-R0.1-SNAPSHOT")
-    compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("me.clip:placeholderapi:2.11.5") {
+        exclude(group = "org.bstats")
+    }
+
+    paperweight.foliaDevBundle("1.19.4-R0.1-SNAPSHOT")
 }
 
-tasks {
-    jar {
-        enabled = false
-    }
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+}
 
-    shadowJar {
-        archiveBaseName.set("Folia-Expansion")
-        archiveVersion.set("1.0.0")
-        archiveClassifier.set("")
-        archiveExtension.set("jar")
-        // relocate("me.clip.placeholderapi", "com.Folia-Expansion.shaded.placeholderapi")
-        mergeServiceFiles()
-    }
-
-    build {
-        dependsOn(shadowJar)
-    }
+configure<JavaPluginExtension> {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
