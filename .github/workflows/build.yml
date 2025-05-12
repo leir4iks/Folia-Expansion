@@ -28,5 +28,5 @@ jobs:
       - name: Upload plugin jar artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FoliaExpansion-plugin
-          path: build/libs/Folia-Expansion-1.0.0.jar
+          name: foliaplaceholders-plugin
+          path: build/libs/FoliaExpansion-1.0.0.jar
